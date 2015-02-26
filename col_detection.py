@@ -2,7 +2,28 @@ import cv2
 import numpy as np
 from Tkinter import *
 
+def setBounds(ev):
+    print ev.widget
+
+def createScales(seq, frame):
+    for nm in seq:
+        scale1 = Scale(frame,orient = HORIZONTAL,length = 400,
+                       from_ = 0, to = 255, tickinterval = 15, resolution = 1, name = nm[0])
+        scale1.set(nm[1])
+        label1 = Label(frame, text = nm[0])
+        label1.pack()
+        scale1.pack()
+        scale1.bind("<1>", setBounds)
+
 root=Tk()
+label1 = Label(root, text = "hi")
+label1.pack()
+frame = Frame(root, width = 450, name="scalesUpper")
+frame.pack(side="left")
+createScales([['blueLower',0],['greenLower',0],['redLower',0]], frame)
+frame2 = Frame(root, width = 450, name = "scalesLower")
+frame2.pack(side="right")
+createScales([['blueUpper',0],['greenUpper',0],['redUpper',0]], frame2)
 root.mainloop()
 
 def lower(i):
