@@ -26,23 +26,6 @@ frame2.pack(side="right")
 createScales([['blueUpper',0],['greenUpper',0],['redUpper',0]], frame2)
 root.mainloop()
 
-def lower(i):
-    lBound[0]=i
-
-def upper(i):
-    uBound[0]=i
-
-def lower1(i):
-    lBound[1]=i
-
-def upper1(i):
-    uBound[1]=i
-
-def lower2(i):
-    lBound[2]=i
-
-def upper2(i):
-    uBound[2]=i
 
 def get_pics(lBound, uBound, toSave, lHeight, uHeight, filename):
     saveable=False
