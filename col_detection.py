@@ -1,10 +1,35 @@
 import cv2
 import numpy as np
 from Tkinter import *
+import tkFileDialog
+
+lBound = np.array([0, 0, 0], dtype=np.uint8)    #b,g,r
+uBound = np.array([62,62,62], dtype=np.uint8)
 
 def setBounds(ev):
-    print ev.widget
+    case = str(ev.widget)[1:].split(".")
+    try:
+        if case[1] == 'blueLower':
+            uBound[0] = ev.widget.get()
+        elif case[1] == 'greenLower':
+            uBound[1] = ev.widget.get()
+        elif case[1] == 'redLower':
+            lBound[2] = ev.widget.get()
+        elif case[1] == 'blueUpper':
+            uBound[0] = ev.widget.get()
+        elif case[1] == 'greenUpper':
+            uBound[1] = ev.widget.get()
+        elif case[1] == 'redUpper':
+            uBound[2] = ev.widget.get()
+    except:
+        print "error"
 
+def selectFile(ev): 
+    fn = tkFileDialog.Open(root, filetypes = [('*.txt files', '.txt')]).show()
+    if fn == '':
+        return
+    flName.set(fn)
+  
 def createScales(seq, frame):
     for nm in seq:
         scale1 = Scale(frame,orient = HORIZONTAL,length = 400,
@@ -16,14 +41,22 @@ def createScales(seq, frame):
         scale1.bind("<1>", setBounds)
 
 root=Tk()
-label1 = Label(root, text = "hi")
+flName = StringVar(value="")
+label1 = Label(root, textvariable = flName)
 label1.pack()
-frame = Frame(root, width = 450, name="scalesUpper")
+
+
+frame = Frame(root, width = 900, height = 200, name = "main")
+frame.pack(side = "top")
+bt = Button(frame, text = "Select file")
+bt.bind("<1>", selectFile)
+bt.pack()
+frame = Frame(root, width = 450, name="scalesLower")
 frame.pack(side="left")
 createScales([['blueLower',0],['greenLower',0],['redLower',0]], frame)
-frame2 = Frame(root, width = 450, name = "scalesLower")
-frame2.pack(side="right")
-createScales([['blueUpper',0],['greenUpper',0],['redUpper',0]], frame2)
+frame = Frame(root, width = 450, name = "scalesUpper")
+frame.pack(side="right")
+createScales([['blueUpper',0],['greenUpper',0],['redUpper',0]], frame)
 root.mainloop()
 
 
