@@ -4,15 +4,22 @@ from Tkinter import *
 import tkFileDialog
 import os.path
 
-lBoun = np.array([0, 0, 0], dtype=np.uint8)    #b,g,r
+lBoun = np.array([0, 0, 0], dtype=np.uint8)    # b,g,r
 uBoun = np.array([62,62,62], dtype=np.uint8)
 
-def getPics(lBound, uBound, toSave, lHeight, uHeight, filename):
-    try:
-        os.mkdir("black")
-    except:
-        pass
+def getPics(lBound, uBound, toSave, lHeight, uHeight, filename, sBlack, sWhite):
+    if(sBlack):
+        try:
+            os.mkdir("black")
+        except:
+            pass
+    if(sWhite):
+        try:
+            os.mkdir("white")
+        except:
+            pass
     saveable=False
+    print filename
     #lBound = np.array([0, 0, 0], dtype=np.uint8)
     #uBound = np.array([62,62,62], dtype=np.uint8)
     cap = cv2.VideoCapture(filename.encode("utf-8"))
@@ -45,7 +52,7 @@ def getPics(lBound, uBound, toSave, lHeight, uHeight, filename):
                 if(cv2.contourArea(contour)>110):
                     saveable=True
             cnt+=1
-            if(saveable and cnt>=toSave):
+            if(saveable and cnt>=toSave and sBlack):
                     cv2.imwrite(os.path.join("black", ('file'+str(i)+'.png')),mask)
                     i+=1
                     cnt=0
@@ -89,36 +96,47 @@ def createScales(seq, frame):
         scale1.bind("<1>", setBounds)
 
 def tryProcess(ev):
-    getPics(lBoun, uBoun, int(text.get()), 35, 150, os.path.realpath(flName.get()))
+    print var.get()
+    getPics(lBoun, uBoun, int(c1.get()), 35, 150,
+            os.path.realpath(flName.get()), var.get(), var2.get())
 
 #main interface
 root=Tk()
+var = IntVar() # save black
+var2 = IntVar() # save white
 flName = StringVar(value="")
 frame = Frame(root, width = 900, height = 400, border = 5)
 frame.pack(side = "top", expand = True, fill = X)
-label1 = Label(frame, textvariable = flName)
-label1.pack()
+c = Label(frame, textvariable = flName)
+c.pack()
 frame = Frame(root, width = 900, height = 400, border = 8)
 frame.pack(side = "top", expand = True, fill = X)
-bt = Button(frame, text = "Select file", width = 10)
-bt.bind("<1>", selectFile)
-bt.pack()
+c = Button(frame, text = "Select file", width = 10)
+c.bind("<1>", selectFile)
+c.pack()
 frame = Frame(root, width = 900, height = 400, border = 8)
 frame.pack(side = "top", expand = True, fill = X)
-bt = Button(frame, text = "Go!", width = 10)
-bt.bind("<1>", tryProcess)
-bt.pack()#(side = "right")
+c = Button(frame, text = "Go!", width = 10)
+c.bind("<1>", tryProcess)
+c.pack()
 frame = Frame(root, width = 900, height = 100, border = 10)
 frame.pack(expand = True)
 #advanced settings
-label1 = Label(frame, text = "advanced", font = ("Times", "18"))
-label1.pack(fill = X)
+c = Label(frame, text = "advanced", font = ("Times", "18"))
+c.pack(fill = X)
 frame = Frame(root, width = 900, height = 100, border = 10)
 frame.pack(expand = True)
-text = Entry(frame)
-text.pack()
-label1 = Label(frame, text = "each %number% frame pic will be taken")
-label1.pack()
+c = Checkbutton(frame, text = "save black", onvalue = 1, offvalue = 0, variable = var)
+c.select()
+c.pack(side = 'right')
+c = Checkbutton(frame, text = "save white", onvalue = 1, offvalue = 0, variable = var2)
+c.select()
+c.pack(side = 'right')
+c1 = Entry(frame)
+c1.insert(0, "20")
+c1.pack()
+c = Label(frame, text = "each %number% frame pic will be taken")
+c.pack()
 frame = Frame(root, width = 450, name="scalesLower")
 frame.pack(side="left")
 createScales([['blueLower',0],['greenLower',0],['redLower',0]], frame)
