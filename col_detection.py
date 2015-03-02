@@ -26,6 +26,7 @@ def getPics(lBound, uBound, toSave, lHeight, uHeight, filename, sBlack, sWhite):
     i=0
     cnt=0
     try:
+		#flName.set(cap.isOpened())
         while(cap.isOpened()):
             _, frame = cap.read()
             frame = frame[lHeight:uHeight, :] #y,x
@@ -52,8 +53,13 @@ def getPics(lBound, uBound, toSave, lHeight, uHeight, filename, sBlack, sWhite):
                 if(cv2.contourArea(contour)>110):
                     saveable=True
             cnt+=1
-            if(saveable and cnt>=toSave and sBlack):
-                    cv2.imwrite(os.path.join("black", ('file'+str(i)+'.png')),mask)
+            if(saveable and cnt>=toSave):
+                    if(sBlack):
+                        cv2.imwrite(os.path.join("black",
+                                                 ('file'+str(i)+'.png')),mask)
+                    elif(sWhite):
+                        cv2.imwrite(os.path.join("white",
+                                                 ('file'+str(i)+'.png')),mask)
                     i+=1
                     cnt=0
             saveable=False
