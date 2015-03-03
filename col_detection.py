@@ -5,76 +5,88 @@ import tkFileDialog
 import os.path
 import time
 import threading
+from threading import *
 
+runn = True
 lBoun = np.array([0, 0, 0], dtype=np.uint8)    # b,g,r
 uBoun = np.array([62,62,62], dtype=np.uint8)
 
-def getPics(lBound, uBound, toSave, lHeight, uHeight, filename, sBlack, sWhite):
-    if(sBlack):
-        try:
-            os.mkdir("black")
-        except:
-            pass
-    if(sWhite):
-        try:
-            os.mkdir("white")
-        except:
-            pass
-    flName.set(str("current"))
-    saveable=False
-    #lBound = np.array([0, 0, 0], dtype=np.uint8)
-    #uBound = np.array([62,62,62], dtype=np.uint8)
-    cap = cv2.VideoCapture(filename.encode("utf-8"))
-    i=0
-    cnt=0
-    while(not cap.isOpened()):
-        time.sleep(1)
-        cnt+=1
-        if(cnt>10): return
-    #
-    try:
-        flName.set(cap.isOpened())
-        while(cap.isOpened()):
-            _, frame = cap.read()
-            frame = frame[lHeight:uHeight, :] #y,x
-            mask = cv2.inRange(frame, lBound, uBound)
-            res = cv2.bitwise_and(frame, frame, mask = mask)
-            imgray = cv2.cvtColor(res,
-                                  cv2.COLOR_BGR2GRAY)
-            thresh=cv2.adaptiveThreshold(mask,
-                                         255,
-                                         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
-                                         cv2.THRESH_BINARY,11,2)
-            edged = cv2.Canny(thresh,
-                              80, 200)
-            contours, hierarchy = cv2.findContours(np.copy(edged),
-                                                   cv2.RETR_EXTERNAL,
-                                                   cv2.CHAIN_APPROX_SIMPLE)
-            contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5]
-            for contour in  contours:
-                #temp = np.array(contour)
-                #bound_rect = cv2.boundingRect(temp)
-                #pt1 = (bound_rect[0], bound_rect[1])
-                #pt2 = (bound_rect[0] + bound_rect[2], bound_rect[1] + bound_rect[3])
-                #cv2.rectangle(frame, pt1, pt2, cv2.cv.CV_RGB(255,0,0), 1)
-                if(cv2.contourArea(contour)>110):
-                    saveable=True
+class Video():
+    def __init__(self):
+        #print "i'm in class"+str(self)
+        self.runns = True
+
+    def stop(self):
+        self.runns = False
+        
+    def getPics(self, lBound, uBound, toSave, lHeight, uHeight, filename, sBlack, sWhite):
+        #print "i'm in" + str(self)
+        if(sBlack):
+            try:
+                os.mkdir("black")
+            except:
+                pass
+        if(sWhite):
+            try:
+                os.mkdir("white")
+            except:
+                pass
+        flName.set(str("current"))
+        saveable=False
+        cap = cv2.VideoCapture(filename.encode("utf-8"))
+        i=0
+        cnt=0
+        while(not cap.isOpened()):
+            time.sleep(1)
             cnt+=1
-            if(saveable and cnt>=toSave):
-                    if(sBlack):
-                        cv2.imwrite(os.path.join("black",
-                                                 ('file'+str(i)+'.png')),mask)
-                        flName.set('saving'+str(i))
-                    if(sWhite):
-                        mask2 = 255 - mask
-                        cv2.imwrite(os.path.join("white",
-                                                 ('file'+str(i)+'.png')),mask2)
-                    i+=1
-                    cnt=0
-                    saveable=False
-    except TypeError:
-        flName.set("Finishing...")
-        cap.release()
+            if(cnt>10): return
+        try:
+            flName.set(cap.isOpened())
+            while(cap.isOpened()):
+                if(not self.runns):
+                    #print 'exiting'
+                    cap.release()
+                    return
+                _, frame = cap.read()
+                frame = frame[lHeight:uHeight, :] #y,x
+                mask = cv2.inRange(frame, lBound, uBound)
+                res = cv2.bitwise_and(frame, frame, mask = mask)
+                imgray = cv2.cvtColor(res,
+                                      cv2.COLOR_BGR2GRAY)
+                thresh=cv2.adaptiveThreshold(mask,
+                                             255,
+                                             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+                                             cv2.THRESH_BINARY,11,2)
+                edged = cv2.Canny(thresh,
+                                  80, 200)
+                contours, hierarchy = cv2.findContours(np.copy(edged),
+                                                       cv2.RETR_EXTERNAL,
+                                                       cv2.CHAIN_APPROX_SIMPLE)
+                contours = sorted(contours, key = cv2.contourArea, reverse = True)[:5]
+                for contour in  contours:
+                    temp = np.array(contour)
+                    x, y, w , h = cv2.boundingRect(temp)
+                    #pt1 = (bound_rect[0], bound_rect[1])
+                    #pt2 = (bound_rect[0] + bound_rect[2], bound_rect[1] + bound_rect[3])
+                    #cv2.rectangle(frame, pt1, pt2, cv2.cv.CV_RGB(255,0,0), 1)
+                    if(cv2.contourArea(contour)>110):
+                        saveable=True
+                cnt+=1
+                if(saveable and cnt>=toSave):
+                        i+=1
+                        if(sBlack):
+                            cv2.imwrite(os.path.join("black",
+                                                     ('file'+str(i)+'.png')),mask)
+                            flName.set('saving'+str(i))
+                        if(sWhite):
+                            mask2 = 255 - mask
+                            cv2.imwrite(os.path.join("white",
+                                                     ('file'+str(i)+'.png')),mask2)
+                        cnt=0
+                        saveable=False
+        except TypeError:
+            flName.set("Finishing...")
+            cap.release()
 
 def setBounds(ev):
     case = str(ev.widget)[1:].split(".")
@@ -112,14 +124,23 @@ def createScales(seq, frame):
 
 def tryProcess(ev):
     #print var.get()
-    prc = threading.Thread(target = getPics, name = 'pics', args = (lBoun,
+    prc = threading.Thread(target = vd.getPics, name = 'pics', args = (lBoun,
                            uBoun, int(c1.get()), 35, 150,
                             os.path.realpath(flName.get()),
                            var.get(), var2.get()))
     prc.start()
 
+def onQuit():
+    vd.stop()
+    #prc.stop()
+    root.quit()
+    root.destroy()
+
 #main interface
+runn = True
+vd = Video()
 root=Tk()
+root.protocol("WM_DELETE_WINDOW", onQuit)
 var = IntVar() # save black
 var2 = IntVar() # save white
 flName = StringVar(value="")
