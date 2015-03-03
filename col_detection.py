@@ -3,6 +3,8 @@ import numpy as np
 from Tkinter import *
 import tkFileDialog
 import os.path
+import time
+import threading
 
 lBoun = np.array([0, 0, 0], dtype=np.uint8)    # b,g,r
 uBoun = np.array([62,62,62], dtype=np.uint8)
@@ -18,15 +20,20 @@ def getPics(lBound, uBound, toSave, lHeight, uHeight, filename, sBlack, sWhite):
             os.mkdir("white")
         except:
             pass
+    flName.set(str("current"))
     saveable=False
-    print filename
     #lBound = np.array([0, 0, 0], dtype=np.uint8)
     #uBound = np.array([62,62,62], dtype=np.uint8)
     cap = cv2.VideoCapture(filename.encode("utf-8"))
     i=0
     cnt=0
+    while(not cap.isOpened()):
+        time.sleep(1)
+        cnt+=1
+        if(cnt>10): return
+    #
     try:
-		#flName.set(cap.isOpened())
+        flName.set(cap.isOpened())
         while(cap.isOpened()):
             _, frame = cap.read()
             frame = frame[lHeight:uHeight, :] #y,x
@@ -57,14 +64,16 @@ def getPics(lBound, uBound, toSave, lHeight, uHeight, filename, sBlack, sWhite):
                     if(sBlack):
                         cv2.imwrite(os.path.join("black",
                                                  ('file'+str(i)+'.png')),mask)
-                    elif(sWhite):
+                        flName.set('saving'+str(i))
+                    if(sWhite):
+                        mask2 = 255 - mask
                         cv2.imwrite(os.path.join("white",
-                                                 ('file'+str(i)+'.png')),mask)
+                                                 ('file'+str(i)+'.png')),mask2)
                     i+=1
                     cnt=0
-            saveable=False
+                    saveable=False
     except TypeError:
-        print "Finishing..."
+        flName.set("Finishing...")
         cap.release()
 
 def setBounds(ev):
@@ -102,9 +111,12 @@ def createScales(seq, frame):
         scale1.bind("<1>", setBounds)
 
 def tryProcess(ev):
-    print var.get()
-    getPics(lBoun, uBoun, int(c1.get()), 35, 150,
-            os.path.realpath(flName.get()), var.get(), var2.get())
+    #print var.get()
+    prc = threading.Thread(target = getPics, name = 'pics', args = (lBoun,
+                           uBoun, int(c1.get()), 35, 150,
+                            os.path.realpath(flName.get()),
+                           var.get(), var2.get()))
+    prc.start()
 
 #main interface
 root=Tk()
@@ -132,10 +144,12 @@ c = Label(frame, text = "advanced", font = ("Times", "18"))
 c.pack(fill = X)
 frame = Frame(root, width = 900, height = 100, border = 10)
 frame.pack(expand = True)
-c = Checkbutton(frame, text = "save black", onvalue = 1, offvalue = 0, variable = var)
+c = Checkbutton(frame, text = "save black", onvalue = 1, offvalue = 0,
+                variable = var)
 c.select()
 c.pack(side = 'right')
-c = Checkbutton(frame, text = "save white", onvalue = 1, offvalue = 0, variable = var2)
+c = Checkbutton(frame, text = "save white", onvalue = 1, offvalue = 0,
+                variable = var2)
 c.select()
 c.pack(side = 'right')
 c1 = Entry(frame)
