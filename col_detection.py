@@ -19,7 +19,7 @@ class Video():
         self.runs = False
 
     # noinspection PyBroadException
-    def getPics(self, lbound, ubound, tosave, frmtostrt, lheight, uheight, filename, sblack, swhite):
+    def getPics(self, lbound, ubound, tosave, frmtostrt, maximum, lheight, uheight, filename, sblack, swhite, soriginal):
         # print "i'm in" + str(self)
         if sblack:
             try:
@@ -31,7 +31,11 @@ class Video():
                 os.mkdir("white")
             except:
                 pass
-        flName.set(str("current"))
+        if soriginal:
+            try:
+                os.mkdir("original")
+            except:
+                pass
         saveable = False
         cap = cv2.VideoCapture(filename.encode("utf-8"))
         i = 0
@@ -74,7 +78,7 @@ class Video():
                         if cv2.contourArea(contour) > 110:
                             saveable = True
                     cnt += 1
-                    if saveable and cnt >= tosave:
+                    if saveable and cnt >= tosave and i < maximum:
                         i += 1
                         if sblack:
                             cv2.imwrite(os.path.join("black",
@@ -84,12 +88,17 @@ class Video():
                             mask2 = 255 - mask
                             cv2.imwrite(os.path.join("white",
                                                      ('file' + str(i) + '.png')), mask2)
+                        if soriginal:
+                            mask2 = 255 - mask
+                            cv2.imwrite(os.path.join("original",
+                                                     ('file' + str(i) + '.png')), fram)
                         cnt = 0
                         saveable = False
+
                 else:
                     total += 1
         except TypeError:
-            flName.set("Finishing...")
+            flName.set("Finished")
             cap.release()
 
 
@@ -142,6 +151,7 @@ root = Tk()
 root.protocol("WM_DELETE_WINDOW", on_quit)
 var = IntVar()  # save black
 var2 = IntVar()  # save white
+var3 = IntVar()  # save original image
 flName = StringVar(value="")
 frame = Frame(root, width=900, height=400, border=5)
 frame.pack(side="top", expand=True, fill=X)
@@ -157,9 +167,9 @@ frame.pack(side="top", expand=True, fill=X)
 c = Button(frame, text="Go!", width=10)
 c.bind("<1>", lambda(event): threading.Thread(target=vd.getPics,
                                               name='pics', args=(lBoun,
-                                                                 uBoun, int(c1.get()), int(c2.get()), 35, 150,
-                                                                 os.path.realpath(flName.get()),
-                                                                 var.get(), var2.get())).start())
+                                                                 uBoun, int(c1.get()), int(c2.get()), int(c3.get()),
+                                                                 35, 150, os.path.realpath(flName.get()),
+                                                                 var.get(), var2.get(), var3.get())).start())
 c.pack()
 frame = Frame(root, width=900, height=100, border=10)
 frame.pack(expand=True)
@@ -176,6 +186,10 @@ c = Checkbutton(frame, text="save white", onvalue=1, offvalue=0,
                 variable=var2)
 c.select()
 c.pack(side='right')
+c = Checkbutton(frame, text="save original", onvalue=1, offvalue=0,
+                variable=var3)
+c.select()
+c.pack(side='right')
 c1 = Entry(frame)
 c1.insert(0, "20")
 c1.pack()
@@ -185,6 +199,11 @@ c2 = Entry(frame)
 c2.insert(0, "0")
 c2.pack()
 c = Label(frame, text="frame to start. 1 second ~ 24 frames")
+c.pack()
+c3 = Entry(frame)
+c3.insert(0, "100")
+c3.pack()
+c = Label(frame, text="max amount of pics")
 c.pack()
 frame = Frame(root, width=450, name="scalesLower")
 frame.pack(side="left")
