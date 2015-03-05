@@ -8,9 +8,6 @@ import threading
 
 lBoun = np.array([0, 0, 0], dtype=np.uint8)  # b,g,r
 uBoun = np.array([62, 62, 62], dtype=np.uint8)
-yupper = 0
-ylower = 200
-
 
 class Video():
     def __init__(self):
@@ -45,6 +42,7 @@ class Video():
         i = 0
         cnt = 0
         total = 0
+        waiter = 0
         while not cap.isOpened():
             time.sleep(1)
             cnt += 1
@@ -57,9 +55,17 @@ class Video():
                     # print 'exiting'
                     cap.release()
                     return
-                _, fram = cap.read()
+                rd, fram = cap.read()
+                while not rd:
+                    rd, fram = cap.read()
+                    waiter += 1
+                    time.sleep(0.1)
+                    if waiter > 5:
+                        raise TypeError()
                 if total > frmtostrt:
-                    fram = fram[lheight:uheight, :]  # y,x
+                    lowerTemp = lheight if ((fram.shape[0] >= lheight) and (lheight < uheight)) else 0
+                    upperTemp = uheight if ((fram.shape[0] >= uheight) and (lheight < uheight)) else fram.shape[0]
+                    fram = fram[lowerTemp:upperTemp, :]  # y,x
                     mask = cv2.inRange(fram, lbound, ubound)
                     # res = cv2.bitwise_and(frame, frame, mask=mask)
                     # imgray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
@@ -93,7 +99,6 @@ class Video():
                             cv2.imwrite(os.path.join("white",
                                                      ('file' + str(i) + '.png')), mask2)
                         if soriginal:
-                            mask2 = 255 - mask
                             cv2.imwrite(os.path.join("original",
                                                      ('file' + str(i) + '.png')), fram)
                         cnt = 0
@@ -130,9 +135,9 @@ def set_y_bounds(ev):
     case = str(ev.widget)[1:].split(".")
     try:
         if case[1] == 'lower y border':
-            ylower = ev.widget.get()
+            ybounds[0] = int(ev.widget.get())
         elif case[1] == 'upper y border':
-            yupper = ev.widget.get()
+            ybounds[1] = int(ev.widget.get())
     except:
         pass
 
@@ -151,7 +156,7 @@ def create_scales(seq, fram, pointer):
         label1 = Label(frame, text=nm[0])
         label1.pack()
         scale1.pack()
-        scale1.bind("<1>", pointer)
+        scale1.bind("<ButtonRelease-1>", pointer)
 
 
 def on_quit():
@@ -166,6 +171,7 @@ root.protocol("WM_DELETE_WINDOW", on_quit)
 var = IntVar()  # save black
 var2 = IntVar()  # save white
 var3 = IntVar()  # save original image
+ybounds = [0, 200]
 flName = StringVar(value="")
 frame = Frame(root, width=900, height=400, border=5)
 frame.pack(side="top", expand=True, fill=X)
@@ -182,7 +188,7 @@ c = Button(frame, text="Go!", width=10)
 c.bind("<1>", lambda(event): threading.Thread(target=vd.getPics,
                                               name='pics', args=(lBoun,
                                                                  uBoun, int(c1.get()), int(c2.get()), int(c3.get()),
-                                                                 ylower, yupper, os.path.realpath(flName.get()),
+                                                                 ybounds[0], ybounds[1], os.path.realpath(flName.get()),
                                                                  var.get(), var2.get(), var3.get())).start())
 c.pack()
 frame = Frame(root, width=900, height=100, border=10)
@@ -193,7 +199,7 @@ c.pack(fill=X)
 
 frame = Frame(root, name="borders")
 frame.pack(side="top")
-create_scales((('upper y border', 0), ('lower y border', 200)), frame, set_y_bounds)
+create_scales((('upper y border', 200), ('lower y border', 0)), frame, set_y_bounds)
 
 frame = Frame(root, width=900, height=100, border=10)
 frame.pack(expand=True)
