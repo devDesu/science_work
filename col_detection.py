@@ -8,6 +8,8 @@ import threading
 
 lBoun = np.array([0, 0, 0], dtype=np.uint8)  # b,g,r
 uBoun = np.array([62, 62, 62], dtype=np.uint8)
+yupper = 0
+ylower = 200
 
 
 class Video():
@@ -19,7 +21,9 @@ class Video():
         self.runs = False
 
     # noinspection PyBroadException
-    def getPics(self, lbound, ubound, tosave, frmtostrt, maximum, lheight, uheight, filename, sblack, swhite, soriginal):
+    def getPics(self, lbound, ubound, tosave, frmtostrt,
+                maximum, lheight, uheight, filename,
+                sblack, swhite, soriginal):
         # print "i'm in" + str(self)
         if sblack:
             try:
@@ -119,8 +123,18 @@ def set_bounds(ev):
         elif case[1] == 'redUpper':
             uBoun[2] = ev.widget.get()
     except:
-        print "error"
+        pass
 
+
+def set_y_bounds(ev):
+    case = str(ev.widget)[1:].split(".")
+    try:
+        if case[1] == 'lower y border':
+            ylower = ev.widget.get()
+        elif case[1] == 'upper y border':
+            yupper = ev.widget.get()
+    except:
+        pass
 
 def select_file(event):
     fn = tkFileDialog.Open(root, filetypes=[('video files', '.mp4 .mov .avi')]).show()
@@ -129,7 +143,7 @@ def select_file(event):
     flName.set(fn)
 
 
-def create_scales(seq, fram):
+def create_scales(seq, fram, pointer):
     for nm in seq:
         scale1 = Scale(fram, orient=HORIZONTAL, length=400,
                        from_=0, to=255, tickinterval=15, resolution=1, name=nm[0])
@@ -137,7 +151,7 @@ def create_scales(seq, fram):
         label1 = Label(frame, text=nm[0])
         label1.pack()
         scale1.pack()
-        scale1.bind("<1>", set_bounds)
+        scale1.bind("<1>", pointer)
 
 
 def on_quit():
@@ -168,7 +182,7 @@ c = Button(frame, text="Go!", width=10)
 c.bind("<1>", lambda(event): threading.Thread(target=vd.getPics,
                                               name='pics', args=(lBoun,
                                                                  uBoun, int(c1.get()), int(c2.get()), int(c3.get()),
-                                                                 35, 150, os.path.realpath(flName.get()),
+                                                                 ylower, yupper, os.path.realpath(flName.get()),
                                                                  var.get(), var2.get(), var3.get())).start())
 c.pack()
 frame = Frame(root, width=900, height=100, border=10)
@@ -176,6 +190,11 @@ frame.pack(expand=True)
 #  advanced settings
 c = Label(frame, text="advanced", font=("Times", "18"))
 c.pack(fill=X)
+
+frame = Frame(root, name="borders")
+frame.pack(side="top")
+create_scales((('upper y border', 0), ('lower y border', 200)), frame, set_y_bounds)
+
 frame = Frame(root, width=900, height=100, border=10)
 frame.pack(expand=True)
 c = Checkbutton(frame, text="save black", onvalue=1, offvalue=0,
@@ -207,8 +226,8 @@ c = Label(frame, text="max amount of pics")
 c.pack()
 frame = Frame(root, width=450, name="scalesLower")
 frame.pack(side="left")
-create_scales([['blueLower', 0], ['greenLower', 0], ['redLower', 0]], frame)
+create_scales((('blueLower', 0), ('greenLower', 0), ('redLower', 0)), frame, set_bounds)
 frame = Frame(root, width=450, name="scalesUpper")
 frame.pack(side="right")
-create_scales([['blueUpper', 62], ['greenUpper', 62], ['redUpper', 62]], frame)
+create_scales((('blueUpper', 62), ('greenUpper', 62), ('redUpper', 62)), frame, set_bounds)
 root.mainloop()

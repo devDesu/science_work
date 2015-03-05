@@ -13,7 +13,7 @@ executables = [
 ]
 
 setup(name='Color detection',
-      version='0.2',
+      version='0.3',
       description='Color detection tool',
       executables=executables,
       options={'build_exe': {'include_files': includefiles}}
