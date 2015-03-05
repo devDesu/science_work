@@ -19,7 +19,7 @@ class Video():
         self.runs = False
 
     # noinspection PyBroadException
-    def getPics(self, lbound, ubound, tosave, lheight, uheight, filename, sblack, swhite):
+    def getPics(self, lbound, ubound, tosave, frmtostrt, lheight, uheight, filename, sblack, swhite):
         # print "i'm in" + str(self)
         if sblack:
             try:
@@ -36,6 +36,7 @@ class Video():
         cap = cv2.VideoCapture(filename.encode("utf-8"))
         i = 0
         cnt = 0
+        total = 0
         while not cap.isOpened():
             time.sleep(1)
             cnt += 1
@@ -48,42 +49,45 @@ class Video():
                     # print 'exiting'
                     cap.release()
                     return
-                _, frame = cap.read()
-                frame = frame[lheight:uheight, :]  # y,x
-                mask = cv2.inRange(frame, lbound, ubound)
-                # res = cv2.bitwise_and(frame, frame, mask=mask)
-                # imgray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
-                thresh = cv2.adaptiveThreshold(mask,
-                                               255,
-                                               cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                               cv2.THRESH_BINARY, 11, 2)
-                edged = cv2.Canny(thresh,
-                                  80, 200)
-                contours, hierarchy = cv2.findContours(np.copy(edged),
-                                                       cv2.RETR_EXTERNAL,
-                                                       cv2.CHAIN_APPROX_SIMPLE)
-                contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
-                for contour in contours:
-                    # temp = np.array(contour)
-                    # x, y, w, h = cv2.boundingRect(temp)
-                    # pt1 = (bound_rect[0], bound_rect[1])
-                    # pt2 = (bound_rect[0] + bound_rect[2], bound_rect[1] + bound_rect[3])
-                    # cv2.rectangle(frame, pt1, pt2, cv2.cv.CV_RGB(255,0,0), 1)
-                    if cv2.contourArea(contour) > 110:
-                        saveable = True
-                cnt += 1
-                if saveable and cnt >= tosave:
-                    i += 1
-                    if sblack:
-                        cv2.imwrite(os.path.join("black",
-                                                 ('file' + str(i) + '.png')), mask)
-                        flName.set('saving' + str(i))
-                    if swhite:
-                        mask2 = 255 - mask
-                        cv2.imwrite(os.path.join("white",
-                                                 ('file' + str(i) + '.png')), mask2)
-                    cnt = 0
-                    saveable = False
+                _, fram = cap.read()
+                if total > frmtostrt:
+                    fram = fram[lheight:uheight, :]  # y,x
+                    mask = cv2.inRange(fram, lbound, ubound)
+                    # res = cv2.bitwise_and(frame, frame, mask=mask)
+                    # imgray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
+                    thresh = cv2.adaptiveThreshold(mask,
+                                                   255,
+                                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                   cv2.THRESH_BINARY, 11, 2)
+                    edged = cv2.Canny(thresh,
+                                      80, 200)
+                    contours, hierarchy = cv2.findContours(np.copy(edged),
+                                                           cv2.RETR_EXTERNAL,
+                                                           cv2.CHAIN_APPROX_SIMPLE)
+                    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+                    for contour in contours:
+                        # temp = np.array(contour)
+                        # x, y, w, h = cv2.boundingRect(temp)
+                        # pt1 = (bound_rect[0], bound_rect[1])
+                        # pt2 = (bound_rect[0] + bound_rect[2], bound_rect[1] + bound_rect[3])
+                        # cv2.rectangle(frame, pt1, pt2, cv2.cv.CV_RGB(255,0,0), 1)
+                        if cv2.contourArea(contour) > 110:
+                            saveable = True
+                    cnt += 1
+                    if saveable and cnt >= tosave:
+                        i += 1
+                        if sblack:
+                            cv2.imwrite(os.path.join("black",
+                                                     ('file' + str(i) + '.png')), mask)
+                            flName.set('saving' + str(i))
+                        if swhite:
+                            mask2 = 255 - mask
+                            cv2.imwrite(os.path.join("white",
+                                                     ('file' + str(i) + '.png')), mask2)
+                        cnt = 0
+                        saveable = False
+                else:
+                    total += 1
         except TypeError:
             flName.set("Finishing...")
             cap.release()
@@ -151,8 +155,9 @@ c.pack()
 frame = Frame(root, width=900, height=400, border=8)
 frame.pack(side="top", expand=True, fill=X)
 c = Button(frame, text="Go!", width=10)
-c.bind("<1>", lambda(event): threading.Thread(target=vd.getPics, name='pics', args=(lBoun,
-                                                                 uBoun, int(c1.get()), 35, 150,
+c.bind("<1>", lambda(event): threading.Thread(target=vd.getPics,
+                                              name='pics', args=(lBoun,
+                                                                 uBoun, int(c1.get()), int(c2.get()), 35, 150,
                                                                  os.path.realpath(flName.get()),
                                                                  var.get(), var2.get())).start())
 c.pack()
@@ -175,6 +180,11 @@ c1 = Entry(frame)
 c1.insert(0, "20")
 c1.pack()
 c = Label(frame, text="each %number% frame pic will be taken")
+c.pack()
+c2 = Entry(frame)
+c2.insert(0, "0")
+c2.pack()
+c = Label(frame, text="frame to start. 1 second ~ 24 frames")
 c.pack()
 frame = Frame(root, width=450, name="scalesLower")
 frame.pack(side="left")
